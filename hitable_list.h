@@ -8,7 +8,11 @@ class hitable_list: public hitable {
         int list_size;
         hitable_list() {}
         hitable_list(hitable **l, int n) {list=l; list_size=n;}
-        ~hitable_list() { delete[] list;}
+        ~hitable_list() override {
+            for (int i=0; i<list_size; i++) {
+                delete list[i];
+            }
+        }
         virtual bool hit(const ray&  r, float t_min, float t_max, hit_record& rec) const;
 };
 
