@@ -11,7 +11,7 @@ class sphere: public hitable {
         material* mat_ptr;
         sphere() {}
         sphere(vec3 cen, float r, material* mat) : center(cen), radius(r), mat_ptr(mat) {};
-        ~sphere() {delete mat_ptr;}
+        ~sphere() override {delete mat_ptr;} // override keyword ensures that this wont compile if hitable destructor isn't virtual
         virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
 };
 
