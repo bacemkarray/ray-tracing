@@ -14,12 +14,12 @@
 #include "material.h"
 #include "random_utils.h"
 
-float MAXFLOAT = std::numeric_limits<float>::max();
+float max_float = std::numeric_limits<float>::max();
 
 
 vec3 color(const ray& r, hitable* world, int depth) {
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+    if (world->hit(r, 0.001, max_float, rec)) {
         ray scattered;
         vec3 attenuation;
         if (depth<50 && rec.mat_ptr->scatter(r,rec,attenuation,scattered)) {
@@ -36,19 +36,70 @@ vec3 color(const ray& r, hitable* world, int depth) {
     }
 }
 
+
+hitable* random_scene() {
+    int n=500;
+    hitable **list = new hitable*[n+1];
+    list[0] = new sphere(vec3(0,-1000,0), 1000, new lambertian(vec3(0.5,0.5,0.5)));
+    int i=1;
+    for (int a=-11; a<11; a++) {
+        for (int b=-11; b<11; b++) {
+            float choose_mat = random_float();
+            vec3 center(a+0.9*random_float(),0.2,b+0.9*random_float());
+            if ((center-vec3(4,0.2,0)).length() > 0.9) {
+                if (choose_mat < 0.8) { // diffuse
+                    list[i++] = new sphere(center, 0.2, 
+                        new lambertian(vec3(random_float()*random_float(), random_float()*random_float(), random_float()*random_float())));
+                }
+                else if (choose_mat < 0.95) { // metal
+                    list[i++] = new sphere(center, 0.2, 
+                        new metal(vec3(0.5*(1+random_float()), 0.5*(1+random_float()), 0.5*(1+random_float())), 0.5*random_float()));
+                }
+                else { //glass
+                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
+                }
+            }
+        }
+    }
+    list[i++] = new sphere(vec3(0,1,0), 1.0, new dielectric(1.5));
+    list[i++] = new sphere(vec3(-4,1,0), 1.0, new lambertian(vec3(0.4,0.2,0.1)));
+    list[i++] = new sphere(vec3(4,1,0), 1.0, new metal(vec3(0.7,0.6,0.5), 0.0));
+
+    return new hitable_list(list,i);
+}
+
+
+
+
+
+
 int main() {
-    std::ofstream MyFile("hello_world.ppm");
-    int nx = 200;
-    int ny = 100;
-    int ns = 100;
+    std::ofstream MyFile("render.ppm");
+    int nx = 1000;
+    int ny = 500;
+    int ns = 10;
     MyFile << "P3\n" << nx << " " << ny << "\n255\n";
-    hitable* list[4];
-    list[0] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.8,0.3,0.3)));
-    list[1] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8,0.8,0.0)));
-    list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8,0.6,0.2)));
-    list[3] = new sphere(vec3(-1,0,-1), 0.5, new metal(vec3(0.8,0.8,0.8)));
-    hitable* world = new hitable_list(list,4);
-    camera cam;
+
+    // list[0] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.3,0.3,0.8)));
+    // list[1] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8,0.8,0.0)));
+    // list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8,0.6,0.2), 0.2));
+    // list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
+    // list[4] = new sphere(vec3(-1,0,-1), -0.45, new dielectric(1.5));
+
+    // // hitable* list[2];
+    // // float R = cos(M_PI/4);
+    // // list[0] = new sphere(vec3(-R,0,-1), R, new lambertian(vec3(0,0,1)));
+    // // list[1] = new sphere(vec3(R,0,-1), R, new lambertian(vec3(1,0,0)));
+    hitable* world = random_scene(); 
+    // hitable* world = new hitable_list(list,5);
+
+    vec3 lookfrom(13,2,3);
+    vec3 lookat(0,0,0);
+    // float dist_to_focus = (lookfrom-lookat).length();
+    float dist_to_focus = 10.0;
+    float aperture = 0.1;
+    camera cam(lookfrom, lookat, vec3(0,1,0), 20, float(nx)/float(ny), aperture, dist_to_focus);
+
     for (int j=ny-1; j>=0; j--) {
         for (int i=0; i<nx; i++) {
             vec3 col(0,0,0);
