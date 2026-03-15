@@ -5,14 +5,14 @@
 #include <limits>
 #include <random>
 
-#include "vec3.h"
-#include "ray.h"
-#include "hitable.h"
-#include "sphere.h"
-#include "hitable_list.h"
-#include "camera.h"
-#include "material.h"
-#include "random_utils.h"
+#include "headers/vec3.h"
+#include "headers/ray.h"
+#include "headers/hitable.h"
+#include "headers/sphere.h"
+#include "headers/hitable_list.h"
+#include "headers/camera.h"
+#include "headers/material.h"
+#include "headers/random_utils.h"
 
 float max_float = std::numeric_limits<float>::max();
 
