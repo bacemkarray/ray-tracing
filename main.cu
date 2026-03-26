@@ -50,7 +50,7 @@ __device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_sta
            return cur_attenuation * c;
         }
       }
-   return vec3(0.0,0.0,0.0); // exceeded recursion
+   return vec3(0.0, 0.0, 0.0); // exceeded recursion
 }
 
 
@@ -75,26 +75,29 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     for(int s=0; s < ns; s++) {
         float u = float(i + curand_uniform(&local_rand_state)) / float(max_x);
         float v = float(j + curand_uniform(&local_rand_state)) / float(max_y);
-        ray r = (*cam)->get_ray(u,v);
+        ray r = (*cam)->get_ray(u,v, &local_rand_state);
         col += color(r, world, &local_rand_state);
     }
     fb[pixel_index] = col/float(ns);
 }
 
 
-__global__ void create_world(hitable **d_list, hitable **d_world, camera **d_camera) {
+__global__ void create_world(hitable **d_list, hitable **d_world, camera **d_camera, int nx, int ny) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         *(d_list) = new sphere(vec3(0,0,-1), 0.5f, new metal(vec3(0.8, 0.6, 0.2), 0.7));
         *(d_list+1) = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0)));
         *d_world = new hitable_list(d_list,2);
-        *d_camera = new camera();
+        vec3 lookfrom(13,2,3);
+        vec3 lookat(0,0,0);
+        float dist_to_focus = (lookfrom-lookat).length();
+        float aperture = 0.1;
+        *d_camera = new camera(lookfrom, lookat, vec3(0,1,0), 20, float(nx)/float(ny), aperture, dist_to_focus);
     }
 }
 
 
-__global__ void free_world(hitable **d_list, hitable **d_world, camera **d_camera) {
-    delete *(d_list);
-    delete *(d_list+1);
+__global__ void free_world(hitable **d_world, camera **d_camera) {
+    // delete *d_list;
     delete *d_world;
     delete *d_camera;
 }
@@ -120,9 +123,9 @@ int main() {
     checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
     checkCudaErrors(cudaMalloc((void **)&d_list, 2*sizeof(hitable *)));
     checkCudaErrors(cudaMalloc((void **)&d_world, sizeof(hitable *)));
-    checkCudaErrors(cudaMalloc((void **)&d_camera, sizeof(camera *)));
+    checkCudaErrors(cudaMalloc((void **)&d_camera, sizeof(camera *))); 
     checkCudaErrors(cudaMalloc((void **)&d_rand_state, num_pixels*sizeof(curandState)));
-    create_world<<<1,1>>>(d_list, d_world, d_camera);
+    create_world<<<1,1>>>(d_list, d_world, d_camera, nx, ny);
 
     
     checkCudaErrors(cudaGetLastError());
@@ -162,7 +165,7 @@ int main() {
 
     checkCudaErrors(cudaDeviceSynchronize());
     //free objeects
-    free_world<<<1,1>>>(d_list, d_world, d_camera);
+    free_world<<<1,1>>>(d_world, d_camera);
     checkCudaErrors(cudaDeviceSynchronize());
     //free pointers on gpu
     checkCudaErrors(cudaGetLastError());
