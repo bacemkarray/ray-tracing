@@ -2,16 +2,16 @@
 #define SPHERE_H
 
 #include "hitable.cuh"
-// #include "material.cuh"
+#include "material.cuh"
 
 class sphere: public hitable {
     public:
         vec3 center;
         float radius;
-        // material* mat_ptr;
+        material* mat_ptr;
         __device__ sphere() {}
-        __device__ sphere(vec3 cen, float r) : center(cen), radius(r) {};
-        // __device__ ~sphere() override {delete mat_ptr;} // override keyword ensures that this wont compile if hitable destructor isn't virtual
+        __device__ sphere(vec3 cen, float r, material *mat) : center(cen), radius(r), mat_ptr(mat) {};
+        __device__ ~sphere() override {delete mat_ptr;} // override keyword ensures that this wont compile if hitable destructor isn't virtual
         __device__ virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
 };
 
@@ -27,7 +27,7 @@ __device__ bool sphere::hit(const ray& r, float t_min, float t_max, hit_record& 
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center)/radius;
-            // rec.mat_ptr = mat_ptr;
+            rec.mat_ptr = mat_ptr;
             return true;
         }
         temp = (-b +sqrt(discriminant))/(2.0*a);
@@ -35,7 +35,7 @@ __device__ bool sphere::hit(const ray& r, float t_min, float t_max, hit_record& 
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center)/radius;
-            // rec.mat_ptr = mat_ptr;
+            rec.mat_ptr = mat_ptr;
             return true;
         }
     }
