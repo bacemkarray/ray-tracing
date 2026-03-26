@@ -6,6 +6,12 @@
 
 #define RANDVEC3 vec3(curand_uniform(local_rand_state),curand_uniform(local_rand_state),curand_uniform(local_rand_state))
 
+__global__ void rand_init(curandState *rand_state) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        curand_init(1984, 0, 0, rand_state);
+    }
+}
+
 __device__ inline vec3 random_in_unit_sphere(curandState *local_rand_state) {
     vec3 p;
     do {
