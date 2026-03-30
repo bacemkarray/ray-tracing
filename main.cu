@@ -147,11 +147,11 @@ __global__ void free_world(hitable **d_world, camera **d_camera) {
 
 int main() {
     int nx = 1200;
-    int ny = 600;
+    int ny = 608;
     int ns = 100;
     int n = 500;
-    int tx = 8;
-    int ty = 8;
+    int tx = 16;
+    int ty = 16;
     
     int num_pixels = nx*ny;
     size_t fb_size = 3*num_pixels*sizeof(float);
