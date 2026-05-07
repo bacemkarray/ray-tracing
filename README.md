@@ -1,35 +1,115 @@
-
 # Ray Tracer
 
 <img width="1200" height="608" alt="render" src="https://github.com/user-attachments/assets/95cb9221-a115-4e59-b252-7d6301a24990" />
 
-A GPU-accelerated ray tracer built with C++ and CUDA. This project includes both a traditional CPU-bound ray tracer and a parallelized implementation of it, designed to drastically reduce render times by leveraging the massive parallelism of GPUs.
+A small path tracer implemented in C++ with both CPU and CUDA renderers. Includes diffuse, metal, and dielectric materials; recursive ray scattering; antialiasing; gamma correction; and a depth-of-field camera.
 
-## Implementation Details & Performance
+The CUDA version parallelizes rendering across pixels so each GPU thread traces and samples one pixel independently. This makes it a good project for comparing a straightforward CPU renderer with a GPU implementation of the same ray-tracing logic.
 
-To optimize the rendering process, I focused heavily on efficient thread and block allocation:
+## Features
 
-* **Grid & Block Dimensions:** The image is divided into chunks. I used a block dimension of `<insert your block dim, e.g., 8x8>` threads. I chose this because `<explain why, e.g., it perfectly aligns with warp sizes and maximizes occupancy>`.
-* **Memory Management:** `<Mention if you used unified memory (cudaMallocManaged), constant memory, or any specific memory optimizations>`.
-* **Performance Gains:** `<If you have a rough idea of how much faster this is than a standard C++ CPU render, mention it here! e.g., "Reduced a 10-minute CPU render down to 5 seconds">`.
+- CPU renderer in `main.cpp`
+- CUDA renderer in `main.cu`
+- Randomized scene generation with hundreds of spheres
+- Lambertian, metal, and dielectric materials
+- Camera aperture and focus distance for depth of field
+- Per-pixel random sampling with CURAND in the CUDA path
+- PPM image output
+- Makefile targets for building and profiling
 
-## Getting Started
+## Implementation Details
 
-### Prerequisites
-* NVIDIA GPU with CUDA support
-* CUDA Toolkit (`nvcc`)
-* C++ compiler
+The CPU and CUDA implementations share the same basic rendering model: rays are generated from a camera, tested against a list of hittable objects, scattered through materials up to a maximum depth, and accumulated into a final pixel color.
 
-### Building the Project
-This project uses a standard `Makefile` for easy compilation. 
+The CUDA renderer uses:
+
+- `16x16` thread blocks
+- One thread per pixel
+- A `1200x608` output resolution
+- `100` samples per pixel
+- Up to `50` ray bounces per sample
+- `cudaMallocManaged` for the framebuffer
+- Device allocations for the world, camera, object list, and CURAND states
+
+The scene and camera are created on the GPU, then the render kernel fills the framebuffer in parallel. Each pixel gets its own CURAND state so antialiasing and material scattering can use independent random samples.
+
+## Requirements
+
+- NVIDIA GPU with CUDA support
+- CUDA Toolkit with `nvcc`, `nsys`, and `ncu`
+- C++ compiler, configured as `g++` in the Makefile
+- `make`
+
+The Makefile assumes CUDA is installed at `/usr/local/cuda` unless `CUDA_PATH` is set.
+
+## Building
+
+Build the CPU renderer:
 
 ```bash
-# Clone the repository
-git clone [https://github.com/bacemkarray/ray-tracing.git](https://github.com/bacemkarray/ray-tracing.git)
-cd ray-tracing
+make cpuart
+```
 
-# Build the executable
-make
+Build the CUDA renderer:
 
-# Run the ray tracer
-./main.exe > image.ppm
+```bash
+make cudart
+```
+
+On Windows, the executables are built as `cpuart.exe` and `cudart.exe`. On Linux/macOS-style environments, they are built as `cpuart` and `cudart`.
+
+## Running
+
+Run the CPU renderer:
+
+```bash
+./cpuart
+```
+
+Run the CUDA renderer:
+
+```bash
+./cudart
+```
+
+Both renderers write a PPM image to:
+
+```text
+render.ppm
+```
+
+The CUDA renderer also prints the render time to standard error.
+
+## Profiling
+
+Build and profile the CUDA renderer with NVIDIA Nsight Systems:
+
+```bash
+make profile_basic
+```
+
+Collect a compute profile with NVIDIA Nsight Compute:
+
+```bash
+make profile_compute
+```
+
+Collect selected occupancy and instruction metrics:
+
+```bash
+make profile_metrics
+```
+
+Profiling reports are written to the `reports/` directory. You can set a custom report tag with:
+
+```bash
+make profile_basic TAG=my_run
+```
+
+## Cleaning
+
+Remove generated executables and output files:
+
+```bash
+make clean
+```
