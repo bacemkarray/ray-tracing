@@ -1,7 +1,7 @@
 
 # Ray Tracer
 
-![Final Render](<img width="1200" height="608" alt="render" src="https://github.com/user-attachments/assets/95cb9221-a115-4e59-b252-7d6301a24990" />)
+(<img width="1200" height="608" alt="render" src="https://github.com/user-attachments/assets/95cb9221-a115-4e59-b252-7d6301a24990" />)
 
 A GPU-accelerated ray tracer built with C++ and CUDA. This project includes both a traditional CPU-bound ray tracer and a parallelized implementation of it, designed to drastically reduce render times by leveraging the massive parallelism of GPUs.
 
