@@ -1,3 +1,10 @@
+# Detect OS and set executable extension
+ifeq ($(OS),Windows_NT)
+	EXE_EXT = .exe
+else
+	EXE_EXT =
+endif
+
 CUDA_PATH ?= /usr/local/cuda
 HOST_COMPILER = g++
 NVCC = $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
@@ -17,11 +24,11 @@ NCU = $(CUDA_PATH)/bin/ncu
 
 TAG ?= run
 
-cudart: cudart.o
-	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o cudart cudart.o
+cpuart: main.cpp
+	$(HOST_COMPILER) -o cpuart$(EXE_EXT) main.cpp
 
-cudart.o: main.cu
-	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o cudart.o -c main.cu
+cudart: main.cu
+	$(NVCC) $(NVCCFLAGS) $(GENCODE_FLAGS) -o cudart$(EXE_EXT) main.cu
 
 $(REPORT_DIR):
 	mkdir -p $(REPORT_DIR)
@@ -31,18 +38,18 @@ profile_basic: cudart | $(REPORT_DIR)
 		-t cuda \
 		--stats=true \
 		-o $(REPORT_DIR)/nsys_$(TAG) \
-		./cudart > out.ppm
+		./cudart$(EXE_EXT) > out.ppm
 
 profile_compute: cudart | $(REPORT_DIR)
 	$(NCU) \
 		-o $(REPORT_DIR)/ncu_$(TAG) \
-		./cudart > out.ppm
+		./cudart$(EXE_EXT) > out.ppm
 
 profile_metrics: cudart | $(REPORT_DIR)
 	$(NCU) \
 		--metrics achieved_occupancy,inst_executed,inst_fp_32,inst_fp_64,inst_integer \
 		-o $(REPORT_DIR)/ncu_metrics_$(TAG) \
-		./cudart > out.ppm
+		./cudart$(EXE_EXT) > out.ppm
 
 clean:
-	rm -f cudart cudart.o out.ppm out.jpg
+	rm -f cudart$(EXE_EXT) cpuart$(EXE_EXT) out.ppm out.jpg
